@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package WebViewRPC;
+
+// C# 코드가 생성될 때 네임스페이스 지정
+option csharp_namespace = "WebViewRPC";
+
+message RpcEnvelope {
+  // 각 RPC 호출마다 구분하기 위한 고유 ID
+  string requestId = 1;
+
+  // true이면 "요청(request)", false이면 "응답(response)"
+  bool isRequest = 2;
+
+  // 호출할 메서드 이름, 예: "HelloService.SayHello"
+  string method = 3;
+
+  // 실제 요청/응답 메시지의 Protobuf 직렬화 바이트
+  bytes payload = 4;
+
+  // 예외나 오류 메시지 (에러 발생 시 사용)
+  string error = 5;
+}

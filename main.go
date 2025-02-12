@@ -9,14 +9,13 @@ import (
 	"strings"
 	"text/template"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-// (1) go:embed 템플릿들
-//
+// (1) Embed templates
+
 //go:embed templates/csharp_client.tmpl
 var csharpClientTemplateStr string
 
@@ -43,7 +42,7 @@ func init() {
 	jsServerTmpl = template.Must(template.New("js_server").Parse(jsServerTemplateStr))
 }
 
-// -------------------- 구조체 & 메서드들 --------------------
+// -------------------- Struct & Methods --------------------
 
 type methodInfo struct {
 	MethodName string
@@ -56,24 +55,22 @@ type serviceInfo struct {
 	ServiceName     string
 	Methods         []methodInfo
 
-	AllMessages   []string // e.g. ["HelloRequest","HelloResponse"]
-	ProtoBaseName string   // e.g. "hello_service"
+	AllMessages   []string
+	ProtoBaseName string
 }
 
 func main() {
 	// 1) STDIN -> CodeGeneratorRequest
-	reqBuf, err := io.ReadAll(os.Stdin)
+	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		fail("failed to read request: %v", err)
 	}
 	var req pluginpb.CodeGeneratorRequest
-	if err := proto.Unmarshal(reqBuf, &req); err != nil {
+	if err := proto.Unmarshal(data, &req); err != nil {
 		fail("failed to unmarshal CodeGeneratorRequest: %v", err)
 	}
 
-	// 2) 플러그인 파라미터 해석
-	// ex) "--webviewrpc_out=cs_server,js_client:./out"
-	//     => paramStr = "cs_server,js_client"
+	// 2) parse param (e.g. "cs_server,cs_client,js_server,js_client")
 	paramStr := req.GetParameter()
 	params := parseGeneratorParams(paramStr)
 	genCSClient := (params["cs_client"] == "true")
@@ -81,25 +78,21 @@ func main() {
 	genJSClient := (params["js_client"] == "true")
 	genJSServer := (params["js_server"] == "true")
 
-	// 3) Response 준비
 	resp := &pluginpb.CodeGeneratorResponse{}
 
-	// 4) .proto 파일들 순회
-	for _, fileDesc := range req.ProtoFile {
-		filename := fileDesc.GetName()
-
-		// "file_to_generate"에 속한 .proto만 처리
+	// 3) .proto file -> .cs, .js file
+	for _, fd := range req.ProtoFile {
+		filename := fd.GetName()
 		if !contains(req.FileToGenerate, filename) {
 			continue
 		}
-
 		baseName := strings.TrimSuffix(filename, filepath.Ext(filename))
 
-		// 파일 내 service들
-		for _, svc := range fileDesc.GetService() {
+		// collect service info
+		for _, svc := range fd.GetService() {
 			svcName := svc.GetName()
 
-			// 메서드 목록
+			// collect method info
 			var methods []methodInfo
 			for _, m := range svc.GetMethod() {
 				methods = append(methods, methodInfo{
@@ -110,87 +103,86 @@ func main() {
 			}
 
 			svcData := serviceInfo{
-				CsharpNamespace: getCsharpNamespace(fileDesc),
+				CsharpNamespace: getCsharpNamespace(fd),
 				ServiceName:     svcName,
 				Methods:         methods,
-				AllMessages:     collectAllMessages(fileDesc),
+				AllMessages:     collectAllMessages(fd),
 				ProtoBaseName:   baseName,
 			}
 
-			// ---------- C# Client ----------
+			// (A) C# Client
 			if genCSClient {
-				outCode, e1 := renderTemplate(csharpClientTmpl, svcData)
-				if e1 != nil {
-					appendError(resp, e1.Error())
+				out, e := renderTemplate(csharpClientTmpl, svcData)
+				if e != nil {
+					appendError(resp, e.Error())
 				} else {
 					fileName := fmt.Sprintf("%s_%sClient.cs", baseName, svcName)
 					resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
 						Name:    &fileName,
-						Content: &outCode,
+						Content: &out,
 					})
 				}
 			}
 
-			// ---------- C# Server ----------
+			// (B) C# Server
 			if genCSServer {
-				outCode, e2 := renderTemplate(csharpServerTmpl, svcData)
-				if e2 != nil {
-					appendError(resp, e2.Error())
+				out, e := renderTemplate(csharpServerTmpl, svcData)
+				if e != nil {
+					appendError(resp, e.Error())
 				} else {
 					fileName := fmt.Sprintf("%s_%sBase.cs", baseName, svcName)
 					resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
 						Name:    &fileName,
-						Content: &outCode,
+						Content: &out,
 					})
 				}
 			}
 
-			// ---------- JS Client ----------
+			// (C) JS Client
 			if genJSClient {
-				outCode, e3 := renderTemplate(jsClientTmpl, svcData)
-				if e3 != nil {
-					appendError(resp, e3.Error())
+				out, e := renderTemplate(jsClientTmpl, svcData)
+				if e != nil {
+					appendError(resp, e.Error())
 				} else {
 					fileName := fmt.Sprintf("%s_%sClient.js", baseName, svcName)
 					resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
 						Name:    &fileName,
-						Content: &outCode,
+						Content: &out,
 					})
 				}
 			}
 
-			// ---------- JS Server ----------
+			// (D) JS Server
 			if genJSServer {
-				outCode, e4 := renderTemplate(jsServerTmpl, svcData)
-				if e4 != nil {
-					appendError(resp, e4.Error())
+				out, e := renderTemplate(jsServerTmpl, svcData)
+				if e != nil {
+					appendError(resp, e.Error())
 				} else {
 					fileName := fmt.Sprintf("%s_%sBase.js", baseName, svcName)
 					resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
 						Name:    &fileName,
-						Content: &outCode,
+						Content: &out,
 					})
 				}
 			}
 		}
 	}
 
-	// 5) 응답 serialize -> STDOUT
+	// 4) serialize response -> stdout
 	outBytes, err := proto.Marshal(resp)
 	if err != nil {
-		fail("failed to marshal response: %v", err)
+		fail("failed to marshal CodeGeneratorResponse: %v", err)
 	}
 	os.Stdout.Write(outBytes)
 }
 
-// ------------- 도우미들 ------------------
+// ---------- Helper -----------
 
 func fail(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
 }
 
-// parseGeneratorParams("cs_server,js_client") => map{"cs_server":"true","js_client":"true"}
 func parseGeneratorParams(paramStr string) map[string]string {
 	m := make(map[string]string)
 	if paramStr == "" {
@@ -215,25 +207,16 @@ func contains(arr []string, s string) bool {
 	return false
 }
 
-// e.g. ".myapp.HelloRequest" -> "myappHelloRequest"
-// 실제론 네임스페이스를 더 세밀하게 매핑해도 됨
 func shortTypeName(full string) string {
-	return strings.TrimPrefix(full, ".")
-}
-
-func collectAllMessages(fd *descriptorpb.FileDescriptorProto) []string {
-	var out []string
-	for _, md := range fd.GetMessageType() {
-		out = append(out, md.GetName())
-	}
-	return out
+	// e.g. ".helloworld.HelloRequest" -> "helloworld.HelloRequest"
+	s := strings.TrimPrefix(full, ".")
+	// split
+	parts := strings.Split(s, ".")
+	// take last
+	return parts[len(parts)-1]
 }
 
 func getCsharpNamespace(fd *descriptorpb.FileDescriptorProto) string {
-	opts := fd.GetOptions()
-	if opts != nil {
-		_ = protojson.Format(opts.ProtoReflect().Interface())
-	}
 	if ns := fd.GetOptions().GetCsharpNamespace(); ns != "" {
 		return ns
 	}
@@ -244,10 +227,17 @@ func getCsharpNamespace(fd *descriptorpb.FileDescriptorProto) string {
 	return strings.Title(pkg)
 }
 
+func collectAllMessages(fd *descriptorpb.FileDescriptorProto) []string {
+	var out []string
+	for _, md := range fd.GetMessageType() {
+		out = append(out, md.GetName())
+	}
+	return out
+}
+
 func renderTemplate(tmpl *template.Template, data interface{}) (string, error) {
 	var sb strings.Builder
-	err := tmpl.Execute(&sb, data)
-	if err != nil {
+	if err := tmpl.Execute(&sb, data); err != nil {
 		return "", err
 	}
 	return sb.String(), nil
