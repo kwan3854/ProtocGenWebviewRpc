@@ -21,6 +21,7 @@ protoc --version  # Ensure compiler version is 3+
 
 ## Usage
 ### Basic Usage
+
 **Format**
 ```shell
 protoc \
@@ -28,6 +29,18 @@ protoc \
   --webviewrpc_out=<generating options>:<output directory> \
   -I. <proto file>
 ```
+
+**Javascript**
+```shell
+npx pbjs HelloWorld.proto --es6 hello_world.js
+```
+
+**CSharp**
+```shell
+protoc --csharp_out=. HelloWorld.proto
+```
+
+
 ### Generate CSharp Server Code
 ```shell
 protoc \
