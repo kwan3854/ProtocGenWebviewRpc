@@ -5,7 +5,14 @@ using WebViewRPC;
 
 namespace {{.CsharpNamespace}}
 {
-    public class {{.ServiceName}}Client
+    public interface I{{.ServiceName}}Client
+    {
+        {{range .Methods}}
+        Task<{{.OutputType}}> {{.MethodName}}({{.InputType}} request);
+        {{end}}
+    }
+
+    public class {{.ServiceName}}Client : I{{.ServiceName}}Client
     {
         private readonly WebViewRpcClient _rpcClient;
 
