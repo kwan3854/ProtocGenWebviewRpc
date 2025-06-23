@@ -8,23 +8,24 @@ namespace {{.CsharpNamespace}}
     public interface I{{.ServiceName}}Client
     {
         {{range .Methods}}
-        UniTask<{{.OutputType}}> {{.MethodName}}Async({{.InputType}} request);
+        UniTask<{{.OutputType}}> {{.MethodName}}({{.InputType}} request);
         {{end}}
     }
 
     public class {{.ServiceName}}Client : I{{.ServiceName}}Client
     {
-        private readonly WebViewRpcClient _rpcClient;
+        private readonly WebViewRpcClient rpcClient;
 
         public {{.ServiceName}}Client(WebViewRpcClient rpcClient)
         {
-            _rpcClient = rpcClient;
+            this.rpcClient = rpcClient;
         }
 
         {{range .Methods}}
-        public async UniTask<{{.OutputType}}> {{.MethodName}}Async({{.InputType}} request)
+        public async UniTask<{{.OutputType}}> {{.MethodName}}({{.InputType}} request)
         {
-            return await _rpcClient.CallMethodAsync<{{.OutputType}}>("{{$.ServiceName}}.{{.MethodName}}", request);
+            var response = await rpcClient.CallMethod<{{.OutputType}}>("{{$.ServiceName}}.{{.MethodName}}", request);
+            return response;
         }
         {{end}}
     }
