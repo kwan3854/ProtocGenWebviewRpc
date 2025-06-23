@@ -14,9 +14,11 @@ import { {{range .Methods}}decode{{.InputType}}, encode{{.OutputType}},{{end}} }
 export class {{.ServiceName}}Base {
   {{range .Methods}}
   {{.MethodName}}(requestObj) {
-    // requestObj = JS object (이미 decode된)
-    // requestObj = JS object (already decoded)
-    throw new Error("{{.MethodName}} not implemented");
+    throw new Error("Synchronous method {{.MethodName}} is not implemented. Please override the Async version.");
+  }
+
+  async {{.MethodName}}Async(requestObj) {
+    return this.{{.MethodName}}(requestObj);
   }
   {{end}}
 }
@@ -24,20 +26,20 @@ export class {{.ServiceName}}Base {
 /**
  * static BindService, (C#의 {{.ServiceName}}.BindService(impl))
  * - impl: {{.ServiceName}}Base implementation
- * - return: ServiceDefinition(methodHandlers)
+ * - return: ServiceDefinition(asyncMethodHandlers)
  */
 export class {{.ServiceName}} {
   static bindService(impl) {
     const def = {
-      methodHandlers: {}
+      asyncMethodHandlers: {}
     };
 
     {{range .Methods}}
-    def.methodHandlers["{{$.ServiceName}}.{{.MethodName}}"] = (reqBytes) => {
+    def.asyncMethodHandlers["{{$.ServiceName}}.{{.MethodName}}"] = async (reqBytes) => {
       // 1) decode reqBytes => requestObj
       const reqObj = decode{{.InputType}}(reqBytes);
-      // 2) call impl.{{.MethodName}}(reqObj)
-      const resObj = impl.{{.MethodName}}(reqObj);
+      // 2) call impl.{{.MethodName}}Async(reqObj) with await
+      const resObj = await impl.{{.MethodName}}Async(reqObj);
       // 3) encode resObj => Uint8Array
       const resBytes = encode{{.OutputType}}(resObj);
       return resBytes;

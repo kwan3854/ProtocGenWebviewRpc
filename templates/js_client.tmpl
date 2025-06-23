@@ -17,11 +17,11 @@ export class {{.ServiceName}}Client {
 
   {{range .Methods}}
   /**
-   * async {{.MethodName}}
+   * async {{.MethodName}}Async
    * @param { {{.InputType}} } requestObj
    * @returns {Promise< {{.OutputType}} >}
    */
-  async {{.MethodName}}(requestObj) {
+  async {{.MethodName}}Async(requestObj) {
     // 1) encode requestObj => Uint8Array
     const reqBytes = encode{{.InputType}}(requestObj);
     // 2) callMethod => Promise<Uint8Array>
