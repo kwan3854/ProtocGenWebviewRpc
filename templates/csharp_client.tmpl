@@ -14,17 +14,17 @@ namespace {{.CsharpNamespace}}
 
     public class {{.ServiceName}}Client : I{{.ServiceName}}Client
     {
-        private readonly WebViewRpcClient rpcClient;
+        private readonly WebViewRpcClient _rpcClient;
 
         public {{.ServiceName}}Client(WebViewRpcClient rpcClient)
         {
-            this.rpcClient = rpcClient;
+            this._rpcClient = rpcClient;
         }
 
         {{range .Methods}}
         public async UniTask<{{.OutputType}}> {{.MethodName}}({{.InputType}} request)
         {
-            var response = await rpcClient.CallMethod<{{.OutputType}}>("{{$.ServiceName}}.{{.MethodName}}", request);
+            var response = await _rpcClient.CallMethod<{{.OutputType}}>("{{$.ServiceName}}.{{.MethodName}}", request);
             return response;
         }
         {{end}}
