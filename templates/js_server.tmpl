@@ -11,6 +11,12 @@ import { {{range .Methods}}decode{{.InputType}}, encode{{.OutputType}},{{end}} }
  * Abstract class (like C#'s {{.ServiceName}}Base)
  * Users (server implementors) should inherit this class and override the methods.
  */
+export class {{.ServiceName}}Base {
+  {{range .Methods}}
+  {{.MethodName}}(requestObj) {
+    // requestObj = JS object (이미 decode된)
+    // requestObj = JS object (already decoded)
+    throw new Error("{{.MethodName}} not implemented");
   }
   {{end}}
 }
@@ -23,15 +29,15 @@ import { {{range .Methods}}decode{{.InputType}}, encode{{.OutputType}},{{end}} }
 export class {{.ServiceName}} {
   static bindService(impl) {
     const def = {
-      asyncMethodHandlers: {}
+      methodHandlers: {}
     };
 
     {{range .Methods}}
     def.methodHandlers["{{$.ServiceName}}.{{.MethodName}}"] = (reqBytes) => {
       // 1) decode reqBytes => requestObj
       const reqObj = decode{{.InputType}}(reqBytes);
-      // 2) call await impl.{{.MethodName}}Async(reqObj)
-      const resObj = await impl.{{.MethodName}}Async(reqObj);
+      // 2) call impl.{{.MethodName}}(reqObj)
+      const resObj = impl.{{.MethodName}}(reqObj);
       // 3) encode resObj => Uint8Array
       const resBytes = encode{{.OutputType}}(resObj);
       return resBytes;

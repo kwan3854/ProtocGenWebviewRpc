@@ -7,6 +7,10 @@ namespace {{.CsharpNamespace}}
 {
     /// <summary>
     /// Override your own implementation of this class
+    /// </summary>
+    public abstract class {{.ServiceName}}Base
+    {
+        {{range .Methods}}
         public abstract UniTask<{{.OutputType}}> {{.MethodName}}Async({{.InputType}} request);
         {{end}}
     }
