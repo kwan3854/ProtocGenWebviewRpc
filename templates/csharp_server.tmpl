@@ -11,7 +11,7 @@ namespace {{.CsharpNamespace}}
     public abstract class {{.ServiceName}}Base
     {
         {{range .Methods}}
-        public abstract UniTask<{{.OutputType}}> {{.MethodName}}({{.InputType}} request);
+        public abstract UniTask<{{.OutputType}}> {{.MethodName}}Async({{.InputType}} request);
         {{end}}
     }
 
@@ -30,7 +30,7 @@ namespace {{.CsharpNamespace}}
             {
                 var req = new {{.InputType}}();
                 req.MergeFrom(reqBytes);
-                var resp = await impl.{{.MethodName}}(req);
+                var resp = await impl.{{.MethodName}}Async(req);
                 return Google.Protobuf.ByteString.CopyFrom(resp.ToByteArray());
             };
             {{end}}

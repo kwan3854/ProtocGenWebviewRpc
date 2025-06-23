@@ -8,7 +8,7 @@ namespace {{.CsharpNamespace}}
     public interface I{{.ServiceName}}Client
     {
         {{range .Methods}}
-        UniTask<{{.OutputType}}> {{.MethodName}}({{.InputType}} request);
+        UniTask<{{.OutputType}}> {{.MethodName}}Async({{.InputType}} request);
         {{end}}
     }
 
@@ -22,7 +22,7 @@ namespace {{.CsharpNamespace}}
         }
 
         {{range .Methods}}
-        public async UniTask<{{.OutputType}}> {{.MethodName}}({{.InputType}} request)
+        public async UniTask<{{.OutputType}}> {{.MethodName}}Async({{.InputType}} request)
         {
             return await _rpcClient.CallMethodAsync<{{.OutputType}}>("{{$.ServiceName}}.{{.MethodName}}", request);
         }
