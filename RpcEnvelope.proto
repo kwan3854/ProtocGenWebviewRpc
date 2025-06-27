@@ -20,4 +20,22 @@ message RpcEnvelope {
 
   // 예외나 오류 메시지 (에러 발생 시 사용)
   string error = 5;
+
+  // 청킹 정보 (optional - 청킹이 필요한 경우에만 설정)
+  ChunkInfo chunkInfo = 6;
+}
+
+// 청크 정보
+message ChunkInfo {
+  // 이 청크 세트의 고유 ID
+  string chunkSetId = 1;
+  
+  // 현재 청크 인덱스 (0부터 시작)
+  int32 chunkIndex = 2;
+  
+  // 전체 청크 개수
+  int32 totalChunks = 3;
+  
+  // 원본 메시지의 전체 크기 (검증용)
+  int32 originalSize = 4;
 }
