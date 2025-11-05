@@ -28,11 +28,19 @@ var jsClientTemplateStr string
 //go:embed templates/js_server.tmpl
 var jsServerTemplateStr string
 
+//go:embed templates/ts_client.tmpl
+var tsClientTemplateStr string
+
+//go:embed templates/ts_server.tmpl
+var tsServerTemplateStr string
+
 var (
 	csharpClientTmpl *template.Template
 	csharpServerTmpl *template.Template
 	jsClientTmpl     *template.Template
 	jsServerTmpl     *template.Template
+	tsClientTmpl     *template.Template
+	tsServerTmpl     *template.Template
 )
 
 func init() {
@@ -40,6 +48,8 @@ func init() {
 	csharpServerTmpl = template.Must(template.New("csharp_server").Parse(csharpServerTemplateStr))
 	jsClientTmpl = template.Must(template.New("js_client").Parse(jsClientTemplateStr))
 	jsServerTmpl = template.Must(template.New("js_server").Parse(jsServerTemplateStr))
+	tsClientTmpl = template.Must(template.New("ts_client").Parse(tsClientTemplateStr))
+	tsServerTmpl = template.Must(template.New("ts_server").Parse(tsServerTemplateStr))
 }
 
 // -------------------- Struct & Methods --------------------
@@ -70,13 +80,15 @@ func main() {
 		fail("failed to unmarshal CodeGeneratorRequest: %v", err)
 	}
 
-	// 2) parse param (e.g. "cs_server,cs_client,js_server,js_client")
+	// 2) parse param (e.g. "cs_server,cs_client,js_server,js_client,ts_server,ts_client")
 	paramStr := req.GetParameter()
 	params := parseGeneratorParams(paramStr)
 	genCSClient := (params["cs_client"] == "true")
 	genCSServer := (params["cs_server"] == "true")
 	genJSClient := (params["js_client"] == "true")
 	genJSServer := (params["js_server"] == "true")
+	genTSClient := (params["ts_client"] == "true")
+	genTSServer := (params["ts_server"] == "true")
 
 	resp := &pluginpb.CodeGeneratorResponse{}
 
@@ -159,6 +171,34 @@ func main() {
 					appendError(resp, e.Error())
 				} else {
 					fileName := fmt.Sprintf("%s_%sBase.js", baseName, svcName)
+					resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
+						Name:    &fileName,
+						Content: &out,
+					})
+				}
+			}
+
+			// (E) TS Client
+			if genTSClient {
+				out, e := renderTemplate(tsClientTmpl, svcData)
+				if e != nil {
+					appendError(resp, e.Error())
+				} else {
+					fileName := fmt.Sprintf("%s_%sClient.ts", baseName, svcName)
+					resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
+						Name:    &fileName,
+						Content: &out,
+					})
+				}
+			}
+
+			// (F) TS Server
+			if genTSServer {
+				out, e := renderTemplate(tsServerTmpl, svcData)
+				if e != nil {
+					appendError(resp, e.Error())
+				} else {
+					fileName := fmt.Sprintf("%s_%sBase.ts", baseName, svcName)
 					resp.File = append(resp.File, &pluginpb.CodeGeneratorResponse_File{
 						Name:    &fileName,
 						Content: &out,
