@@ -73,8 +73,31 @@ protoc \
   -I. my_service.proto
 ```
 
+### Generate TypeScript Server Code (v2.1.0+)
+```shell
+protoc \
+  --plugin=protoc-gen-webviewrpc=./protoc-gen-webviewrpc \
+  --webviewrpc_out=ts_server:./OutTypeScript \
+  -I. my_service.proto
+```
+
+### Generate TypeScript Client Code (v2.1.0+)
+```shell
+protoc \
+  --plugin=protoc-gen-webviewrpc=./protoc-gen-webviewrpc \
+  --webviewrpc_out=ts_client:./OutTypeScript \
+  -I. my_service.proto
+```
+
 ### Generate Multiple Code
 ```shell
+# All languages (v2.1.0+)
+protoc \
+  --plugin=protoc-gen-webviewrpc=./protoc-gen-webviewrpc \
+  --webviewrpc_out=cs_client,cs_server,js_client,js_server,ts_client,ts_server:./All \
+  -I. my_service.proto
+
+# C# and JavaScript only
 protoc \
   --plugin=protoc-gen-webviewrpc=./protoc-gen-webviewrpc \
   --webviewrpc_out=cs_client,cs_server,js_client,js_server:./All \
