@@ -2,7 +2,7 @@
 // TypeScript Client: {{.ServiceName}}Client
 
 // Import encoding/decoding functions for each method
-import { {{range .Methods}}encode{{.InputType}}, decode{{.OutputType}},{{end}} } from './{{.ServiceName}}.js';
+import { {{range .Methods}}encode{{.InputType}}, decode{{.OutputType}},{{end}} } from './{{.ServiceName}}';
 
 // Type definitions for request/response messages
 {{range .Methods}}
