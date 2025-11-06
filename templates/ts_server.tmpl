@@ -2,7 +2,7 @@
 // TypeScript Server: {{.ServiceName}}ServiceBase
 
 // Import encoding/decoding functions for each method
-import { {{range .Methods}}decode{{.InputType}}, encode{{.OutputType}},{{end}} } from './{{.ServiceName}}.js';
+import { {{range .Methods}}decode{{.InputType}}, encode{{.OutputType}},{{end}} } from './{{.ServiceName}}';
 
 // Type definitions for request/response messages
 {{range .Methods}}
